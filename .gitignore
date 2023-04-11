@@ -1,0 +1,6 @@
+.ipynb_checkpoints
+backup
+data
+.env
+__pycache__
+.python-version
