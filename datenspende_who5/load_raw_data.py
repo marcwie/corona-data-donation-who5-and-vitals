@@ -7,7 +7,7 @@ def load_who5_responses():
 
     query = """
     SELECT 
-        a.user_id, a.question, c.choice_id, q.description
+        a.user_id, a.created_at, a.question, c.choice_id, q.description
     FROM 
         datenspende.answers a, datenspende.choice c, datenspende.questions q 
     WHERE 
