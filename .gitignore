@@ -4,4 +4,4 @@ data
 .env
 __pycache__
 .python-version
-output/1.01-average_survey_responses.pdf
+output/
