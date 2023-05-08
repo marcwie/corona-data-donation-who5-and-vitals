@@ -73,11 +73,20 @@ def preprocess_vitals(input_file):
     
     df.to_feather("data/02_processed/vitals.feather")
 
+
+def preprocess_users(input_file):
+
+    df = pd.read_feather(input_file)
+    df.drop(columns='creation_timestamp', inplace=True)
+
+    df.to_feather("data/02_processed/users.feather")
+
     
 def main():
 
     preprocess_survey_data('data/01_raw/who5_responses.feather')
     preprocess_vitals('data/01_raw/vitals.feather')
+    preprocess_users('data/01_raw/users.feather')
 
 if __name__ == "__main__":
     main()
