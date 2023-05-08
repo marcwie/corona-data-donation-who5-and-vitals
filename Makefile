@@ -10,6 +10,9 @@ download:
 preprocess:
 	poetry run python datenspende_who5/preprocess.py
 
+compute:
+	poetry run python datenspende_who5/compute.py
+
 pipeline: download preprocess
 
 setup: install download

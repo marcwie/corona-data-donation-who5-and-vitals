@@ -65,7 +65,7 @@ def preprocess_vitals(input_file):
     df.loc[dst_2021 | dst_2022, 'value'] += 1
     
     # Compute 28-day rolling average
-    df = df.set_index('date').groupby(['user_id', 'vitalid']).rolling('28D', min_periods=7).mean().dropna()
+    #df = df.set_index('date').groupby(['user_id', 'vitalid']).rolling('28D', min_periods=7).mean().dropna()
     df.reset_index(inplace=True)
     
     # Clean up the data frame
