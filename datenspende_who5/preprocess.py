@@ -36,6 +36,7 @@ def preprocess_survey_data(input_file):
     df = df[['user_id', 'date', 'question', 'choice_id', 'description']]
     df.sort_values(by=['user_id', 'date'], inplace=True)
     df.reset_index(inplace=True, drop=True)
+    df.date = pd.to_datetime(df.date)
     
     df.to_feather("data/02_processed/who5_responses.feather")
 
