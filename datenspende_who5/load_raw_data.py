@@ -56,6 +56,23 @@ def get_vitals(user_ids, min_date="2021-09-01"):
 
     return vitals
 
+def get_users(user_ids):
+
+    user_ids = load_from_db.tuple_of_user_ids(user_ids)
+
+    query = f"""
+    SELECT 
+        *
+    FROM 
+        marc.preprocessed_users
+    WHERE 
+        preprocessed_users.user_id IN {user_ids}
+    """
+
+    users = load_from_db.run_query(query)
+    
+    return users
+
 
 if __name__ == "__main__":
 
@@ -65,3 +82,6 @@ if __name__ == "__main__":
     user_ids = survey_data.user_id.unique()
     vitals = get_vitals(user_ids)
     vitals.to_feather('data/01_raw/vitals.feather')
+
+    users = get_users(user_ids)
+    users.to_feather('data/01_raw/users.feather')

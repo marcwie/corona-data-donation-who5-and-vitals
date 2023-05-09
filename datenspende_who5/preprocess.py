@@ -36,6 +36,7 @@ def preprocess_survey_data(input_file):
     df = df[['user_id', 'date', 'question', 'choice_id', 'description']]
     df.sort_values(by=['user_id', 'date'], inplace=True)
     df.reset_index(inplace=True, drop=True)
+    df.date = pd.to_datetime(df.date)
     
     df.to_feather("data/02_processed/who5_responses.feather")
 
@@ -65,7 +66,7 @@ def preprocess_vitals(input_file):
     df.loc[dst_2021 | dst_2022, 'value'] += 1
     
     # Compute 28-day rolling average
-    df = df.set_index('date').groupby(['user_id', 'vitalid']).rolling('28D', min_periods=7).mean().dropna()
+    #df = df.set_index('date').groupby(['user_id', 'vitalid']).rolling('28D', min_periods=7).mean().dropna()
     df.reset_index(inplace=True)
     
     # Clean up the data frame
@@ -73,11 +74,20 @@ def preprocess_vitals(input_file):
     
     df.to_feather("data/02_processed/vitals.feather")
 
+
+def preprocess_users(input_file):
+
+    df = pd.read_feather(input_file)
+    df.drop(columns='creation_timestamp', inplace=True)
+
+    df.to_feather("data/02_processed/users.feather")
+
     
 def main():
 
     preprocess_survey_data('data/01_raw/who5_responses.feather')
     preprocess_vitals('data/01_raw/vitals.feather')
+    preprocess_users('data/01_raw/users.feather')
 
 if __name__ == "__main__":
     main()
