@@ -19,3 +19,5 @@ output:
 pipeline: download preprocess compute output
 
 setup: install download
+
+.PHONY: output
