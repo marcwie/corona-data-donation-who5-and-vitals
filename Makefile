@@ -13,6 +13,9 @@ preprocess:
 compute:
 	poetry run python datenspende_who5/compute.py
 
-pipeline: download preprocess
+output:
+	sh scripts/execute_notebooks.sh
+
+pipeline: download preprocess compute output
 
 setup: install download
