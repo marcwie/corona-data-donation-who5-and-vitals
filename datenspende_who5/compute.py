@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from datenspende_who5 import utils
 
 Path("data/03_derived").mkdir(parents=True, exist_ok=True)
 
@@ -56,5 +57,22 @@ def rolling_vitals():
     df.to_feather("data/03_derived/rolling_average_vitals.feather")
 
 
+def create_dataset():
+    
+    answers = pd.read_feather('data/02_processed/who5_responses.feather')
+    vitals = pd.read_feather('data/03_derived/rolling_average_vitals.feather')
+    users = pd.read_feather("data/02_processed/users.feather")
+    
+    df = pd.merge(answers, vitals, on=['user_id', 'date'])
+    df = pd.merge(df, users, on='user_id')
+    
+    utils.bin_data(df)
+    utils.remove_implausible(df)
+
+    df.to_feather('data/03_derived/full_data_binned.feather')
+
+
 if __name__ == "__main__":
+    
     rolling_vitals()
+    create_dataset()
