@@ -9,70 +9,87 @@ MIN_DAYS = 14
 MIN_WEEKDAYS = 10
 MIN_WEEKENDS = 4
 
-def rolling_vitals():
+def get_dummy_entries(surveys, vitals):
+
+    # Get all combination of userid and date for which we have survey responses
+    entries = surveys[['userid', 'date']]
     
-    # Load vital data
-    vitals = pd.read_feather('data/02_processed/vitals.feather')
-    vitals.rename(columns={'userid': 'user_id'}, inplace=True)
-    vitals.date = pd.to_datetime(vitals.date)
+    # Get the list of all device types
+    devices = vitals.deviceid.unique()
 
-    # Load survey data to get all dates when surveys where answered
-    dates = pd.read_feather('data/02_processed/who5_responses.feather')
-    dates.drop(columns=['question', 'choice_id', 'description'], inplace=True)
-    dates.drop_duplicates(inplace=True)
-    dates.date = pd.to_datetime(dates.date)
-
-    # Insert vital ids at each date  
-    dates['vitalid'] = 65
-    _df = dates.copy()
-
-    for vital in (9, 43, 52, 53):
-        dates['vitalid'] = vital
-        _df = pd.concat([_df, dates])
+    # Create a combination of userid and date for each device
+    dummy_entries = pd.concat([entries] * len(devices))
+    
+    # Add each device type to each combination of users and date. 
+    dummy_entries['deviceid'] = np.repeat(devices, len(surveys))
+    
+    return dummy_entries
+    
+    
+def select_subset(vitals, subset):
+    
+    if subset == 'weekend':
+        return vitals[vitals.weekend]
+    elif subset == 'weekday':
+        return vitals[~vitals.weekend]
         
-    # Outer merge of vitals and dates to get the dates at which surveys were taken considered
-    data = pd.merge(vitals, _df, how='outer', on=['user_id', 'date', 'vitalid'])
+    return vitals
 
-    # Discriminate weekends and weekdays
-    data['weekend'] = data.date.dt.dayofweek >= 5
 
-    data.loc[data['weekend'], 'value_weekend'] = data['value'] 
-    data.loc[~data['weekend'], 'value_weekday'] = data['value'] 
+def expand_vitals(vitals, dummy_entries):
+    
+    # Add the dummy entries to the list of vital data
+    vitals = pd.concat([vitals, dummy_entries]).reset_index(drop=True)
+    
+    # This ensures that if an entry of the dummy entries already exists in the vital data, that entry is removed.
+    vitals.drop_duplicates(subset=['userid', 'date', 'deviceid'], keep='first', inplace=True)
 
-    # Compute rolling averages of all days, weekends and weekdays
-    df = data.set_index('date').sort_index().groupby(['user_id', 'vitalid']).rolling('28D')
-    df = df['value', 'value_weekday', 'value_weekend'].agg(['mean', 'count'])
-
-    # Remove means with too few data points
-    df.loc[df['value', 'count'] < MIN_DAYS, ('value', 'mean')] = np.nan
-    df.loc[df['value_weekend', 'count'] < MIN_WEEKENDS, ('value_weekend', 'mean')] = np.nan
-    df.loc[df['value_weekday', 'count'] < MIN_WEEKDAYS, ('value_weekday', 'mean')] = np.nan
-
-    # Clean up the data frame
-    df.drop(columns=df.columns[1::2], inplace=True)
-    df.columns = df.columns.droplevel(1)
-    df.dropna(axis=0, how='all', inplace=True)
+    return vitals
+    
+    
+def compute(surveys, vitals, min_periods=14, subset=''):
+    
+    dummy_entries = get_dummy_entries(surveys, vitals)
+    vitals = select_subset(vitals, subset)
+    vitals = expand_vitals(vitals, dummy_entries)
+    
+    df = vitals.set_index('date').sort_index().groupby(['userid', 'deviceid']).rolling('28D',  min_periods=min_periods)
+    df = df['v9', 'v43', 'v65', 'v52', 'v53'].mean()
+    
+    df.columns = [f'{column}{subset}' for column in df.columns]
     df.reset_index(inplace=True)
-
-    df.to_feather("data/03_derived/rolling_average_vitals.feather")
+    
+    df[f'midsleep{subset}'] = 0.5 * (df[f'v53{subset}'] + df[f'v52{subset}'])
+    
+    return df
 
 
 def create_dataset():
     
-    answers = pd.read_feather('data/02_processed/who5_responses.feather')
-    vitals = pd.read_feather('data/03_derived/rolling_average_vitals.feather')
-    users = pd.read_feather("data/02_processed/users.feather")
-    
-    df = pd.merge(answers, vitals, on=['user_id', 'date'])
-    df = pd.merge(df, users, on='user_id')
-    
-    utils.bin_data(df)
-    utils.remove_implausible(df)
+    surveys = pd.read_feather('data/02_processed/surveys.feather')
+    vitals = pd.read_feather('data/02_processed/vitals.feather')
+    users = pd.read_feather('data/02_processed/users.feather')
 
-    df.to_feather('data/03_derived/full_data_binned.feather')
+    # Compute average vitals for all valid 28-day periods
+    df = compute(surveys, vitals, MIN_DAYS)
+
+    # Append average vitals for weekends and weekdays during each 28-day period
+    for subset, min_periods in (('weekend', MIN_WEEKENDS), ('weekday', MIN_WEEKDAYS)):
+        df_subset = compute(surveys, vitals, min_periods, subset)
+        df = pd.merge(df, df_subset, on=['userid', 'deviceid', 'date'])
+
+    # Compute weekend/weekday differences
+    for vital in ('v9', 'v65', 'v43', 'v52', 'v53', 'midsleep'):
+        df[f'{vital}difference'] = df[f'{vital}weekend'] - df[f'{vital}weekday']
+        
+    df.rename(columns={'midsleepdifference': 'social_jetlag'}, inplace=True)
+
+    df = pd.merge(users, df, left_on='user_id', right_on='userid')
+    df.reset_index(drop=True, inplace=True)
+
+    df.to_feather('data/03_derived/input_data_users_surveys_rolling_vitals.feather')
 
 
 if __name__ == "__main__":
     
-    rolling_vitals()
     create_dataset()
