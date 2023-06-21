@@ -84,6 +84,7 @@ def create_dataset():
         
     df.rename(columns={'midsleepdifference': 'social_jetlag'}, inplace=True)
 
+    df = pd.merge(surveys, df, on=['userid', 'date'])
     df = pd.merge(users, df, left_on='user_id', right_on='userid')
     df.reset_index(drop=True, inplace=True)
 
