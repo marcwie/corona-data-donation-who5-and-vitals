@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "datenspende_who5"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 jupyter = "^1.0.0"
 python-dotenv = "^1.0.0"
 psycopg2-binary = "^2.9.6"
@@ -15,6 +15,7 @@ pandas = "^2.0.0"
 pyarrow = "^11.0.0"
 matplotlib = "^3.7.1"
 geopandas = "^0.13.2"
+scipy = "^1.11.1"
 
 [build-system]
 requires = ["poetry-core"]
