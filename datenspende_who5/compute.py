@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datenspende_who5 import utils
+from scipy.stats import pearsonr
 
 Path("data/03_derived").mkdir(parents=True, exist_ok=True)
 
@@ -98,13 +99,17 @@ def corrcoef(group, question_key, vital_key):
     
     mask = np.isfinite(x) & np.isfinite(y)
     n = mask.sum()
-    
-    if n < 2:
+    x = x[mask]
+    y = y[mask]
+
+    if (n < 2) or (len(np.unique(x)) == 1) or (len(np.unique(y)) == 1):
         corr = np.nan
+        p_value = np.nan
     else:
-        corr = np.corrcoef(x[mask], y[mask])[0, 1]
-    
-    return corr, n
+        #corr = np.corrcoef(x[mask], y[mask])[0, 1]
+        corr, p_value = pearsonr(x, y)
+
+    return corr, p_value, n
 
 
 def compute_pearson_correlation():
@@ -122,7 +127,8 @@ def compute_pearson_correlation():
             _corr = g.apply(corrcoef, question_key, vital_key).reset_index()
             
             _corr[f'{question_key}_{vital_key}_corr'] = _corr[0].apply(lambda x: x[0])
-            _corr[f'{question_key}_{vital_key}_N'] = _corr[0].apply(lambda x: x[1])
+            _corr[f'{question_key}_{vital_key}_pvalue'] = _corr[0].apply(lambda x: x[1])
+            _corr[f'{question_key}_{vital_key}_N'] = _corr[0].apply(lambda x: x[2])
             _corr.drop(columns=0, inplace=True)
 
             corr = pd.merge(corr, _corr, on=['userid', 'deviceid'])
@@ -133,7 +139,7 @@ def compute_pearson_correlation():
 
 if __name__ == "__main__":
     
-    create_dataset()
+    #create_dataset()
 
     # This must be called after create_dataset()
     compute_pearson_correlation()
