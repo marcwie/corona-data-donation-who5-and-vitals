@@ -53,14 +53,19 @@ def compute(surveys, vitals, min_periods=14, subset=''):
     dummy_entries = get_dummy_entries(surveys, vitals)
     vitals = select_subset(vitals, subset)
     vitals = expand_vitals(vitals, dummy_entries)
-    
+    vitals['midsleep'] = 0.5 * (vitals['v53'] + vitals['v52'])
+
     df = vitals.set_index('date').sort_index().groupby(['userid', 'deviceid']).rolling('28D',  min_periods=min_periods)
-    df = df['v9', 'v43', 'v65', 'v52', 'v53'].mean()
     
-    df.columns = [f'{column}{subset}' for column in df.columns]
+    #df = df['v9', 'v43', 'v65', 'v52', 'v53'].mean()
+    df = df['v9', 'v43', 'v65', 'v52', 'v53', 'midsleep'].agg(['mean', 'std'])
+
+    #df.columns = [f'{column}{subset}' for column in df.columns]
+    df.columns = [f'{column[0]}{column[1]}{subset}'.replace('mean', '') for column in df.columns]
+
     df.reset_index(inplace=True)
     
-    df[f'midsleep{subset}'] = 0.5 * (df[f'v53{subset}'] + df[f'v52{subset}'])
+    #df[f'midsleep{subset}'] = 0.5 * (df[f'v53{subset}'] + df[f'v52{subset}'])
     
     return df
 
@@ -139,7 +144,7 @@ def compute_pearson_correlation():
 
 if __name__ == "__main__":
     
-    #create_dataset()
+    create_dataset()
 
     # This must be called after create_dataset()
-    compute_pearson_correlation()
+    #compute_pearson_correlation()
