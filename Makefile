@@ -5,7 +5,7 @@ activate:
 	poetry shell
 
 download:
-	poetry run python datenspende_who5/load_raw_data.py
+	poetry run python datenspende_who5/data/download_data_from_rocs_db.py
 
 preprocess:
 	poetry run python datenspende_who5/preprocess.py
