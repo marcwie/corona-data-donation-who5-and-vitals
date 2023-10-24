@@ -48,19 +48,26 @@ def expand_vitals(vitals, dummy_entries):
     return vitals
 
 
-def compute(surveys, vitals, min_periods=MIN_DAYS, subset=''):
+def compute(surveys, vitals, min_periods=MIN_DAYS, subset='total'):
 
+    print('Compute 28-day rolling average of vitals for subset:', subset)
+
+    print('Create dummy table...')
     dummy_entries = get_dummy_entries(surveys, vitals)
 
+    print('Expand vitals with dummy table...')
     vitals = select_subset(vitals, subset)
     vitals = expand_vitals(vitals, dummy_entries)
+
+    print('Compute rolling mean and std...')
     vitals['midsleep'] = 0.5 * (vitals['v53'] + vitals['v52'])
-
     df = vitals.set_index('date').sort_index().groupby(['userid', 'deviceid']).rolling('28D',  min_periods=min_periods)
-
     df = df['v9', 'v43', 'v65', 'v52', 'v53', 'midsleep'].agg(['mean', 'std'])
+
     df.columns = [f'{column[0]}{column[1]}{subset}'.replace('mean', '') for column in df.columns]
     df.reset_index(inplace=True)
+
+    print('Done!')
 
     return df
 
