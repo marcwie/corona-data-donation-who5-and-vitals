@@ -5,13 +5,13 @@ activate:
 	poetry shell
 
 download:
-	poetry run python datenspende_who5/download.py
+	poetry run python src/download.py
 
 preprocess:
-	poetry run python datenspende_who5/preprocess.py
+	poetry run python src/preprocess.py
 
 merge:
-	poetry run python datenspende_who5/merge.py
+	poetry run python src/merge.py
 
 output:
 	sh scripts/execute_notebooks.sh

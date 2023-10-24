@@ -48,7 +48,7 @@ def expand_vitals(vitals, dummy_entries):
     return vitals
 
 
-def compute(surveys, vitals, min_periods=14, subset=''):
+def compute(surveys, vitals, min_periods=MIN_DAYS, subset=''):
 
     dummy_entries = get_dummy_entries(surveys, vitals)
 
