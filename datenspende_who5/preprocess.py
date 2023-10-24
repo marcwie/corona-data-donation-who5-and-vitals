@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 
-OUTPUT_PATH = Path("data/02_processed")
+OUTPUT_PATH = Path("data/02_interim")
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 ZIP_TO_NUTS = 'data/00_external/pc2020_DE_NUTS-2021_v3.0.csv'
 
@@ -171,7 +171,7 @@ def preprocess_survey_data(input_file):
 
     df['total_wellbeing'] = df[['q49', 'q50', 'q54', 'q55', 'q56']].mean(axis=1)
 
-    df.to_feather("data/02_processed/surveys.feather")
+    df.to_feather(OUTPUT_PATH / "surveys.feather")
 
 
 def preprocess_vital_data(input_file):
@@ -232,7 +232,7 @@ def preprocess_vital_data(input_file):
     df['weekend'] = df.date.dt.dayofweek >= 5
 
     df.reset_index(drop=True, inplace=True)
-    df.to_feather("data/02_processed/vitals.feather")
+    df.to_feather(OUTPUT_PATH / "vitals.feather")
 
 
 def preprocess_users(input_file):
@@ -253,7 +253,7 @@ def preprocess_users(input_file):
     df = pd.merge(df, plz, left_on='zip_5digit', right_on='CODE', how='left')
     df.drop(columns=['creation_timestamp', 'CODE'], inplace=True)
 
-    df.to_feather("data/02_processed/users.feather")
+    df.to_feather(OUTPUT_PATH / "users.feather")
 
 
 def main():
