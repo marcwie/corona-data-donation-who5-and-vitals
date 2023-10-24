@@ -260,9 +260,16 @@ def main():
     """
     Preprocess survey, vital and user data for further analysis.
     """
+    print('Preprocess survey data...')
     preprocess_survey_data('data/01_raw/who5_responses.feather')
+
+    print('Preprocess vital data...')
     preprocess_vital_data('data/01_raw/vitals.feather')
+
+    print('Preprocess user data...')
     preprocess_users('data/01_raw/users.feather')
+
+    print('Done!')
 
 
 if __name__ == "__main__":
