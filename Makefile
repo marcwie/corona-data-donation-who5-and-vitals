@@ -8,7 +8,7 @@ download:
 	poetry run python datenspende_who5/download.py
 
 preprocess:
-	poetry run python datenspende_who5/preprocess.py
+	poetry run python datenspende_who5/process.py
 
 compute:
 	poetry run python datenspende_who5/compute.py
