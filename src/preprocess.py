@@ -154,6 +154,7 @@ def preprocess_survey_data(input_file, output_file):
 
     Args:
         input_file (str): Path to the raw survey data. Typically stored in 'data/01_raw'.
+        output_file (str): Path to the desired output file. Typically stored in 'data/02_interim'.
     """
 
     df = pd.read_feather(input_file)
@@ -193,6 +194,7 @@ def preprocess_vital_data(input_file, output_file):
 
     Args:
         input_file (str): Path to the raw vital data. Typically stored in 'data/01_raw'.
+        output_file (str): Path to the desired output file. Typically stored in 'data/02_interim'.
     """
     df = pd.read_feather(input_file)
 
@@ -240,6 +242,9 @@ def preprocess_users(input_file, output_file, zip_to_nuts_mapping_file):
 
     Args:
         input_file (str): Path to the raw user data. Typically stored in 'data/01_raw'.
+        output_file (str): Path to the desired output file. Typically stored in 'data/02_interim'.
+        zip_to_nuts_mapping_file (str): Path to a .csv file containing the mapping of zip codes to \
+            NUTS3. Typically stored in 'data/00_external'.
     """
     df = pd.read_feather(input_file)
     plz = pd.read_csv(zip_to_nuts_mapping_file, sep=';')
