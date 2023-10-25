@@ -1,13 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import numpy as np
-
-OUTPUT_PATH = Path("data/03_processed")
-OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
-
-MIN_DAYS = 14
-MIN_WEEKDAYS = 10
-MIN_WEEKENDS = 4
+import hydra
 
 
 def get_dummy_entries(surveys, vitals):
@@ -42,13 +36,14 @@ def expand_vitals(vitals, dummy_entries):
     # Add the dummy entries to the list of vital data
     vitals = pd.concat([vitals, dummy_entries]).reset_index(drop=True)
 
-    # This ensures that if an entry of the dummy entries already exists in the vital data, that entry is removed.
+    # This ensures that if an entry of the dummy entries already exists in the vital data, that
+    # entry is removed.
     vitals.drop_duplicates(subset=['userid', 'date', 'deviceid'], keep='first', inplace=True)
 
     return vitals
 
 
-def compute(surveys, vitals, min_periods=MIN_DAYS, subset='total'):
+def compute(surveys, vitals, min_periods, subset):
 
     print('Compute 28-day rolling average of vitals for subset:', subset)
 
@@ -59,9 +54,12 @@ def compute(surveys, vitals, min_periods=MIN_DAYS, subset='total'):
     vitals = select_subset(vitals, subset)
     vitals = expand_vitals(vitals, dummy_entries)
 
-    print('Compute rolling mean and std...')
+    # Set midsleep before computing the rolling averages
     vitals['midsleep'] = 0.5 * (vitals['v53'] + vitals['v52'])
-    df = vitals.set_index('date').sort_index().groupby(['userid', 'deviceid']).rolling('28D',  min_periods=min_periods)
+
+    print('Compute rolling mean and std...')
+    df = vitals.set_index('date').sort_index()
+    df =df.groupby(['userid', 'deviceid']).rolling('28D',  min_periods=min_periods)
     df = df['v9', 'v43', 'v65', 'v52', 'v53', 'midsleep'].agg(['mean', 'std'])
 
     df.columns = [f'{column[0]}{column[1]}{subset}'.replace('mean', '') for column in df.columns]
@@ -72,17 +70,27 @@ def compute(surveys, vitals, min_periods=MIN_DAYS, subset='total'):
     return df
 
 
-def main():
+@hydra.main(version_base=None, config_path='../config', config_name='main.yaml')
+def main(config):
 
-    surveys = pd.read_feather('data/02_interim/surveys.feather')
-    vitals = pd.read_feather('data/02_interim/vitals.feather')
-    users = pd.read_feather('data/02_interim/users.feather')
+    input_path = Path(config.data.interim)
+    output_path = Path(config.data.processed)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    surveys = pd.read_feather(input_path / config.data.filenames.surveys)
+    vitals = pd.read_feather(input_path / config.data.filenames.vitals)
+    users = pd.read_feather(input_path / config.data.filenames.users)
 
     # Compute average vitals for all valid 28-day periods
-    df = compute(surveys, vitals, MIN_DAYS)
+    df = compute(surveys, vitals, config.process.min_days_for_averaging_vitals, subset='total')
 
     # Append average vitals for weekends and weekdays during each 28-day period
-    for subset, min_periods in (('weekend', MIN_WEEKENDS), ('weekday', MIN_WEEKDAYS)):
+    settings = (
+        ('weekend', config.process.min_weekenddays_for_averaging_vitals),
+        ('weekday', config.process.min_weekdays_for_averaging_vitals)
+    )
+
+    for subset, min_periods in settings:
         df_subset = compute(surveys, vitals, min_periods, subset)
         df = pd.merge(df, df_subset, on=['userid', 'deviceid', 'date'])
 
@@ -96,7 +104,7 @@ def main():
     df = pd.merge(users, df, left_on='user_id', right_on='userid')
     df.reset_index(drop=True, inplace=True)
 
-    df.to_feather(OUTPUT_PATH / "input_data_users_surveys_rolling_vitals.feather")
+    df.to_feather(output_path / config.data.filenames.merged_data)
 
 
 if __name__ == "__main__":
