@@ -4,6 +4,10 @@ install:
 activate:
 	poetry shell
 
+notebook:
+	poetry shell
+	jupyter notebook
+
 download:
 	poetry run python src/download.py
 

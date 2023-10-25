@@ -14,9 +14,7 @@ from dotenv import load_dotenv
 import psycopg2
 import pandas as pd
 import numpy as np
-
-OUTPUT_PATH = Path("data/01_raw")
-OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+import hydra
 
 
 def connector():
@@ -194,26 +192,30 @@ def get_users(user_ids):
     return users
 
 
-def main():
+@hydra.main(version_base=None, config_path='../config/', config_name='main.yaml')
+def main(config):
     """
     Download survey, vital and user data from the ROCS DB.
     """
 
+    output_path = Path(config.data.raw)
+    output_path.mkdir(parents=True, exist_ok=True)
+
     print('Downloading survey data from ROCS DB...')
     survey_data = load_who5_responses()
-    survey_data.to_feather(OUTPUT_PATH / 'who5_responses.feather')
+    survey_data.to_feather(output_path / config.data.filenames.surveys)
 
     print('Downloading vital data from ROCS DB...')
     user_ids = survey_data.user_id.unique()
     vitals = get_vitals(user_ids)
-    vitals.to_feather(OUTPUT_PATH / 'vitals.feather')
+    vitals.to_feather(output_path / config.data.filenames.vitals)
 
     print('Downloading user data from ROCS DB...')
     users = get_users(user_ids)
-    users.to_feather(OUTPUT_PATH / 'users.feather')
+    users.to_feather(output_path / config.data.filenames.users)
 
     print('Done!')
 
 
 if __name__ == "__main__":
-    main()
+    main() # pylint: disable=E1120
