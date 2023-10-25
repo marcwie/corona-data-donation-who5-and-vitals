@@ -1,0 +1,9 @@
+data:
+  external: data/00_external
+  raw: data/01_raw
+  interim: data/02_interim
+  filenames:
+    vitals: vitals.feather
+    surveys: who5_responses.feather
+    users: users.feather
+    zip_to_nuts: pc2020_DE_NUTS-2021_v3.0.csv

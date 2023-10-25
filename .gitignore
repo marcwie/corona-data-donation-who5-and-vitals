@@ -7,3 +7,4 @@ __pycache__
 output/
 tests
 !datenspende_who5/data
+outputs/

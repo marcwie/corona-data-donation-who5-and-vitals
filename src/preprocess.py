@@ -4,11 +4,8 @@ Preprocess the raw vital, user and survey data for further analysis.
 from pathlib import Path
 import pandas as pd
 import numpy as np
-
-
-OUTPUT_PATH = Path("data/02_interim")
-OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
-ZIP_TO_NUTS = 'data/00_external/pc2020_DE_NUTS-2021_v3.0.csv'
+import hydra
+from omegaconf import DictConfig
 
 
 def add_date_column(df):
@@ -142,7 +139,7 @@ def set_user_and_date_as_column(df):
     df.rename(columns={'user_id': 'userid'}, inplace=True)
 
 
-def preprocess_survey_data(input_file):
+def preprocess_survey_data(input_file, output_file):
     """
     Preprocess the raw survey data.
 
@@ -171,10 +168,10 @@ def preprocess_survey_data(input_file):
 
     df['total_wellbeing'] = df[['q49', 'q50', 'q54', 'q55', 'q56']].mean(axis=1)
 
-    df.to_feather(OUTPUT_PATH / "surveys.feather")
+    df.to_feather(output_file)
 
 
-def preprocess_vital_data(input_file):
+def preprocess_vital_data(input_file, output_file):
     """
     Preprocess the raw vital data.
 
@@ -232,10 +229,10 @@ def preprocess_vital_data(input_file):
     df['weekend'] = df.date.dt.dayofweek >= 5
 
     df.reset_index(drop=True, inplace=True)
-    df.to_feather(OUTPUT_PATH / "vitals.feather")
+    df.to_feather(output_file)
 
 
-def preprocess_users(input_file):
+def preprocess_users(input_file, output_file, zip_to_nuts_mapping_file):
     """
     Add NUTS3 codes to user data and drop unnecessary columns.
 
@@ -245,7 +242,7 @@ def preprocess_users(input_file):
         input_file (str): Path to the raw user data. Typically stored in 'data/01_raw'.
     """
     df = pd.read_feather(input_file)
-    plz = pd.read_csv(ZIP_TO_NUTS, sep=';')
+    plz = pd.read_csv(zip_to_nuts_mapping_file, sep=';')
 
     plz.NUTS3 = plz.NUTS3.str.replace('\'', '')
     plz.CODE = plz.CODE.str.replace('\'', '')
@@ -253,21 +250,37 @@ def preprocess_users(input_file):
     df = pd.merge(df, plz, left_on='zip_5digit', right_on='CODE', how='left')
     df.drop(columns=['creation_timestamp', 'CODE'], inplace=True)
 
-    df.to_feather(OUTPUT_PATH / "users.feather")
+    df.to_feather(output_file)
 
 
-def main():
+@hydra.main(version_base=None, config_path='../config', config_name='main.yaml')
+def main(config: DictConfig):
     """
     Preprocess survey, vital and user data for further analysis.
     """
+    external_path = Path(config.data.external)
+    input_path = Path(config.data.raw)
+    output_path = Path(config.data.interim)
+    output_path.mkdir(parents=True, exist_ok=True)
+
     print('Preprocess survey data...')
-    preprocess_survey_data('data/01_raw/who5_responses.feather')
+    preprocess_survey_data(
+        input_file=input_path / config.data.filenames.surveys,
+        output_file=output_path / config.data.filenames.surveys
+    )
 
     print('Preprocess vital data...')
-    preprocess_vital_data('data/01_raw/vitals.feather')
+    preprocess_vital_data(
+        input_file=input_path / config.data.filenames.vitals,
+        output_file=output_path / config.data.filenames.vitals
+    )
 
     print('Preprocess user data...')
-    preprocess_users('data/01_raw/users.feather')
+    preprocess_users(
+        input_file=input_path / config.data.filenames.users,
+        output_file=output_path / config.data.filenames.users,
+        zip_to_nuts_mapping_file=external_path / config.data.filenames.zip_to_nuts
+    )
 
     print('Done!')
 
