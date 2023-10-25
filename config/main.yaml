@@ -1,0 +1,16 @@
+data:
+  external: data/00_external
+  raw: data/01_raw
+  interim: data/02_interim
+  processed: data/03_processed
+  filenames:
+    vitals: vitals.feather
+    surveys: who5_responses.feather
+    users: users.feather
+    zip_to_nuts: pc2020_DE_NUTS-2021_v3.0.csv
+    merged_data: "merged_data_users_surveys_rolling_vitals.feather"
+
+process:
+  min_days_for_averaging_vitals: 14
+  min_weekdays_for_averaging_vitals: 10
+  min_weekenddays_for_averaging_vitals: 4
