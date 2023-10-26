@@ -6,3 +6,6 @@ __pycache__
 .python-version
 output/
 tests
+!datenspende_who5/data
+outputs/
+computations
