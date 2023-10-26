@@ -145,7 +145,7 @@ def main(config):
     users = pd.read_feather(input_path / config.data.filenames.users)
 
     # Compute average vitals for all valid 28-day periods
-    df = compute(surveys, vitals, config.process.min_days_for_averaging_vitals, subset='total')
+    df = compute(surveys, vitals, config.process.min_days_for_averaging_vitals, subset='')
 
     # Append average vitals for weekends and weekdays during each 28-day period
     settings = (

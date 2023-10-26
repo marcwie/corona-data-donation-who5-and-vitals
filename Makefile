@@ -17,10 +17,13 @@ preprocess:
 merge:
 	poetry run python src/merge.py
 
+compute:
+	poetry run python src/analyze.py
+
 output:
 	sh scripts/execute_notebooks.sh
 
-pipeline: download preprocess merge output
+pipeline: download preprocess merge compute output
 
 setup: install download
 
