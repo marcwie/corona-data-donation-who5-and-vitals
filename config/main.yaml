@@ -14,3 +14,8 @@ process:
   min_days_for_averaging_vitals: 14
   min_weekdays_for_averaging_vitals: 10
   min_weekenddays_for_averaging_vitals: 4
+
+compute:
+  folder: computations
+  filenames:
+    correlations: correlations.feather
