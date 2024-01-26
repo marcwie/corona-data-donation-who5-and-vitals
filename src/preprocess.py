@@ -198,6 +198,13 @@ def preprocess_vital_data(input_file, output_file):
     """
     df = pd.read_feather(input_file)
 
+    df['date'] = pd.to_datetime(df['date'])
+
+    # Correct sleep timing for correct timezone
+    sleep_timing = df.vitalid.isin([52, 53])
+    df.loc[sleep_timing, 'value'] += df.loc[sleep_timing, 'timezone_offset'] * 60
+    df.drop(columns='timezone_offset', inplace=True)
+
     # Put vital data as columns
     df = df.set_index(['userid', 'date', 'deviceid', 'vitalid']).unstack()
     df.columns = df.columns.droplevel(0)
@@ -211,8 +218,8 @@ def preprocess_vital_data(input_file, output_file):
     df['v53'] = (pd.to_datetime(df['v53'], unit='s') - df['date']) / pd.Timedelta(hours=1)
 
     # Correct for DST
-    df.loc[(df.date <= '2021-10-31') | df.date.between('2022-03-28', '2022-10-30'), 'v52'] += 1
-    df.loc[(df.date <= '2021-11-01') | df.date.between('2022-03-28', '2022-10-31'), 'v53'] += 1
+    #df.loc[(df.date <= '2021-10-31') | df.date.between('2022-03-28', '2022-10-30'), 'v52'] += 1
+    #df.loc[(df.date <= '2021-11-01') | df.date.between('2022-03-28', '2022-10-31'), 'v53'] += 1
 
     # Remove dates past the end of Datenspende
     df = df[df.date <= '2022-12-31']

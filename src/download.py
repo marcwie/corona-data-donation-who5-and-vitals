@@ -134,7 +134,12 @@ def get_vitals(user_ids, min_date="2021-09-01"):
 
     query = f"""
     SELECT
-        user_id AS userid, date, type AS vitalid, value, source AS deviceid
+        user_id AS userid,
+        date,
+        type AS vitalid,
+        value,
+        source AS deviceid,
+        COALESCE(timezone_offset, 0) as timezone_offset
     FROM
         datenspende.vitaldata
     WHERE
@@ -143,10 +148,11 @@ def get_vitals(user_ids, min_date="2021-09-01"):
         vitaldata.type IN (9, 65, 43, 52, 53)
     AND
         vitaldata.date >= '{min_date}'
+    AND
+        (timezone_offset IS NULL or timezone_offset IN (0, 60, 120))
     """
 
     vitals = run_query(query)
-    vitals.date = pd.to_datetime(vitals.date)
 
     return vitals
 
@@ -195,22 +201,22 @@ def get_users(user_ids):
 @hydra.main(version_base=None, config_path='../config/', config_name='main.yaml')
 def main(config):
     """
-    Download survey, vital and user data from the ROCS DB.
+    Download survey, vital and user data from the data base.
     """
 
     output_path = Path(config.data.raw)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    print('Downloading survey data from ROCS DB...')
+    print('Downloading survey data...')
     survey_data = load_who5_responses()
     survey_data.to_feather(output_path / config.data.filenames.surveys)
 
-    print('Downloading vital data from ROCS DB...')
+    print('Downloading vital data...')
     user_ids = survey_data.user_id.unique()
     vitals = get_vitals(user_ids)
     vitals.to_feather(output_path / config.data.filenames.vitals)
 
-    print('Downloading user data from ROCS DB...')
+    print('Downloading user data...')
     users = get_users(user_ids)
     users.to_feather(output_path / config.data.filenames.users)
 
