@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["Marc Wiedermann <marcwiedermann@posteo.de>"]
 readme = "README.md"
-packages = [{include = "datenspende_who5"}]
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
