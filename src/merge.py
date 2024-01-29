@@ -160,12 +160,12 @@ def main(config):
     # Compute weekend/weekday differences
     for vital in ('v9', 'v65', 'v43', 'v52', 'v53', 'midsleep'):
         df[f'{vital}difference'] = df[f'{vital}weekend'] - df[f'{vital}weekday']
+        df[f'{vital}difference_relative'] = df[f'{vital}weekend'] / df[f'{vital}weekday'] - 1
 
     df.rename(columns={'midsleepdifference': 'social_jetlag'}, inplace=True)
 
     df = pd.merge(surveys, df, on=['userid', 'date'])
     df = pd.merge(users, df, left_on='user_id', right_on='userid')
-    df.reset_index(drop=True, inplace=True)
 
     df.to_feather(output_path / config.data.filenames.merged_data)
 
