@@ -126,7 +126,7 @@ def compute(surveys, vitals, min_periods, subset):
     return df
 
 
-def compute_Zscores(df, keys, by):
+def compute_zscores(df, keys, by):
     """
     Compute Z-scores of given variables for specified sub-populations.
 
@@ -201,7 +201,7 @@ def main(config):
     df = pd.merge(surveys, df, on=['userid', 'date'])
     df = pd.merge(users, df, left_on='user_id', right_on='userid')
 
-    df = compute_Zscores(
+    df = compute_zscores(
         df,
         keys=['q49', 'q50', 'q54', 'q55', 'q56', 'total_wellbeing'],
         by=['salutation', 'birth_date']
