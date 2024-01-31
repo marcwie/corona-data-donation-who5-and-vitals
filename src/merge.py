@@ -99,7 +99,7 @@ def compute(surveys, vitals, min_periods, subset):
         subset (_type_): _description_
 
     Returns:
-        _type_: _description_
+        df: The resulting DataFrame
     """
     print('Compute 28-day rolling average of vitals for subset:', subset)
 
@@ -122,6 +122,37 @@ def compute(surveys, vitals, min_periods, subset):
     df.reset_index(inplace=True)
 
     print('Done!')
+
+    return df
+
+
+def compute_Zscores(df, keys, by):
+    """
+    Compute Z-scores of given variables for specified sub-populations.
+
+    Args:
+        df (pandas.DataFrame): DataFrame containing containing for which Z-scores are computed
+        keys (list of string): The keys of the variables in the DataFrame for which Z-scores are
+            computed.
+        by (list of string): The criteria (keys in the DataFrame) that defines the sub-populations
+            (e.g. age and/or gender)
+
+    Returns:
+        df: The DataFrame with added columns for Z-scores
+    """
+    for key in keys:
+
+        # Make sure to always compute user averages first!!!
+        user_avg = df.groupby(['user_id']).agg({by[0]: 'max', by[1]: 'max', key: 'mean'})
+
+        # From each user average we compute the mean and std per bucket
+        avg = user_avg.groupby(by)[key].agg(['mean', 'std'])
+        avg.reset_index(inplace=True)
+        avg.rename(columns={'mean': key + '_demog_mean', 'std': key + '_demog_std'}, inplace=True)
+
+        # Add the averages and std to the main data frame and compute Z-scores
+        df = pd.merge(df, avg, on=by)
+        df[key +'_Z'] = (df[key] - df[key + '_demog_mean']) / df[key + '_demog_std']
 
     return df
 
@@ -164,8 +195,17 @@ def main(config):
 
     df.rename(columns={'midsleepdifference': 'social_jetlag'}, inplace=True)
 
+    # Add sleep duration in hours
+    df['v43_hr'] = df.v43 / 60
+
     df = pd.merge(surveys, df, on=['userid', 'date'])
     df = pd.merge(users, df, left_on='user_id', right_on='userid')
+
+    df = compute_Zscores(
+        df,
+        keys=['q49', 'q50', 'q54', 'q55', 'q56', 'total_wellbeing'],
+        by=['salutation', 'birth_date']
+    )
 
     df.to_feather(output_path / config.data.filenames.merged_data)
 

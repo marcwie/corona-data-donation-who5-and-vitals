@@ -241,7 +241,7 @@ def preprocess_vital_data(input_file, output_file):
     df.to_feather(output_file)
 
 
-def preprocess_users(input_file, output_file, zip_to_nuts_mapping_file):
+def preprocess_users(input_file, output_file, zip_to_nuts_mapping_file, age_level1, age_level2):
     """
     Add NUTS3 codes to user data and drop unnecessary columns.
 
@@ -254,6 +254,22 @@ def preprocess_users(input_file, output_file, zip_to_nuts_mapping_file):
             NUTS3. Typically stored in 'data/00_external'.
     """
     df = pd.read_feather(input_file)
+
+    # Compute age and define age groups
+    df['age'] = (2020 - df.birth_date + 2.5)
+    df.loc[df['age'].between(0, age_level1, inclusive='left'), 'age_group'] = 0
+    df.loc[df['age'].between(age_level1, age_level2, inclusive='left'), 'age_group'] = 1
+    df.loc[df['age'].between(age_level2, 100, inclusive='left'), 'age_group'] = 2
+
+    # Drop users with survey reponses that are too early
+    df = df[~df.user_id.isin([1143114, 1143193, 1144681, 1147298, 1144157, 1155559])]
+
+    # Drop users with unreasonable birth dates
+    df = df[~df.birth_date.isin([2004, 1984, 2005])]
+
+    # Drop users with salution 'D' due to the low sample size
+    df = df[df.salutation != 'D']
+
     plz = pd.read_csv(zip_to_nuts_mapping_file, sep=';')
 
     plz.NUTS3 = plz.NUTS3.str.replace('\'', '')
@@ -291,7 +307,9 @@ def main(config: DictConfig):
     preprocess_users(
         input_file=input_path / config.data.filenames.users,
         output_file=output_path / config.data.filenames.users,
-        zip_to_nuts_mapping_file=external_path / config.data.filenames.zip_to_nuts
+        zip_to_nuts_mapping_file=external_path / config.data.filenames.zip_to_nuts,
+        age_level1=config.process.users.age_level1,
+        age_level2=config.process.users.age_level2
     )
 
     print('Done!')
