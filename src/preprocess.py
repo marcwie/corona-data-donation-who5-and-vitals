@@ -256,7 +256,7 @@ def preprocess_users(input_file, output_file, zip_to_nuts_mapping_file, age_leve
     df = pd.read_feather(input_file)
 
     # Compute age and define age groups
-    df['age'] = (2020 - df.birth_date + 2.5)
+    df['age'] = 2020 - df.birth_date + 2.5
     df.loc[df['age'].between(0, age_level1, inclusive='left'), 'age_group'] = 0
     df.loc[df['age'].between(age_level1, age_level2, inclusive='left'), 'age_group'] = 1
     df.loc[df['age'].between(age_level2, 100, inclusive='left'), 'age_group'] = 2
