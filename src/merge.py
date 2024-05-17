@@ -143,7 +143,9 @@ def compute_zscores(df, keys, by):
     for key in keys:
 
         # Make sure to always compute user averages first!!!
-        user_avg = df.groupby(['user_id']).agg({by[0]: 'max', by[1]: 'max', key: 'mean'})
+        agg = {b: 'max' for b in by}
+        agg[key] = 'mean'
+        user_avg = df.groupby(['user_id']).agg(agg)
 
         # From each user average we compute the mean and std per bucket
         avg = user_avg.groupby(by)[key].agg(['mean', 'std'])
